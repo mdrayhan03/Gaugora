@@ -30,9 +30,10 @@ SQLite is stored on the `gaugora-data` volume at `/data/gaugora.db`.
 
 ## First-time setup
 
-1. Open **SMTP** and configure host, from, and recipients.
-2. Open **Rules** and create a threshold rule (e.g. memory > 85%).
-3. Watch **Dashboard** / **Metrics** for samples; **Mail** for queue and attempts.
+1. Set `GAUGORA_PROJECT_NAME` in `.env` (shown in alert emails).
+2. Open **SMTP** and configure host, from, and recipients.
+3. Open **Rules** and create a threshold rule (e.g. memory > 85%).
+4. Watch **Dashboard** / **Metrics** for samples; **Mail** for queue and attempts.
 
 ## Layout
 
@@ -42,6 +43,7 @@ See [documents/architecture.md](documents/architecture.md) and [documents/plan.m
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
+| `GAUGORA_PROJECT_NAME` | `Gaugora` | Project/VM name shown in alert emails |
 | `GAUGORA_SECRET_KEY` | `dev-secret-change-me` | Flask secret |
 | `GAUGORA_DATABASE_URL` | `sqlite:///./data/gaugora.db` | SQLAlchemy URL |
 | `GAUGORA_SAMPLE_INTERVAL_SECONDS` | `60` | Metric sample interval |

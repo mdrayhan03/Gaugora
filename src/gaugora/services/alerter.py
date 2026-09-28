@@ -32,8 +32,10 @@ class AlerterService:
                 if self.alerts.is_in_cooldown(breach.rule, channel):
                     continue
                 recipients = list(smtp.to_addresses or [])
-                subject = f"[Gaugora] {breach.rule.name}"
+                project = self.settings.project_name
+                subject = f"[Gaugora] {project} — {breach.rule.name}"
                 body = (
+                    f"Project: {project}\n"
                     f"Alert: {breach.rule.name}\n"
                     f"Metric: {breach.rule.metric_key}\n"
                     f"Condition: {breach.rule.metric_key} {breach.rule.operator} "

@@ -13,6 +13,7 @@ load_dotenv()
 
 @dataclass(frozen=True)
 class Settings:
+    project_name: str
     secret_key: str
     database_url: str
     sample_interval_seconds: int
@@ -37,6 +38,7 @@ def load_settings() -> Settings:
     database_url = os.getenv("GAUGORA_DATABASE_URL", "sqlite:///./data/gaugora.db")
     _ensure_sqlite_parent(database_url)
     return Settings(
+        project_name=os.getenv("GAUGORA_PROJECT_NAME", "Gaugora").strip() or "Gaugora",
         secret_key=os.getenv("GAUGORA_SECRET_KEY", "dev-secret-change-me"),
         database_url=database_url,
         sample_interval_seconds=int(os.getenv("GAUGORA_SAMPLE_INTERVAL_SECONDS", "60")),
