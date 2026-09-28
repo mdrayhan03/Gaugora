@@ -1,0 +1,30 @@
+services:
+  gaugora:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      GAUGORA_DATABASE_URL: sqlite:////data/gaugora.db
+      GAUGORA_HOST: 0.0.0.0
+      GAUGORA_PORT: "8080"
+    volumes:
+      - gaugora-data:/data
+    restart: unless-stopped
+    # Enforced by `docker compose up`
+    cpus: 0.50
+    mem_limit: 256m
+    mem_reservation: 128m
+    # Also declared for Swarm / deploy tooling
+    deploy:
+      resources:
+        limits:
+          cpus: "0.50"
+          memory: 256M
+        reservations:
+          cpus: "0.10"
+          memory: 128M
+
+volumes:
+  gaugora-data:
