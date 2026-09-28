@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Rules — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="page-header">
+  <h1>Alert rules</h1>
+  <p class="muted">v1 condition: metric &gt; N%. Channels other than email are selectable for later.</p>
+</section>
+
+<section class="panel">
+  <h2>Existing rules</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Condition</th>
+        <th>Channels</th>
+        <th>Cooldown</th>
+        <th>Enabled</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rule in rules %}
+      <tr>
+        <td>{{ rule.name }}</td>
+        <td><code>{{ rule.metric_key }} {{ rule.operator }} {{ rule.threshold }}</code></td>
+        <td>{{ rule.channels | join(', ') }}</td>
+        <td>{{ rule.cooldown_seconds }}s</td>
+        <td>{{ 'yes' if rule.enabled else 'no' }}</td>
+        <td><a href="{{ url_for('rules.rule_edit', rule_id=rule.id) }}">Edit</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No rules yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>Create rule</h2>
+  <form method="post" class="form grid-form">
+    <label>
+      Name
+      <input type="text" name="name" required placeholder="High memory">
+    </label>
+    <label>
+      Metric
+      <select name="metric_key" required>
+        {% for m in metrics %}
+        <option value="{{ m.key }}">{{ m.name }} ({{ m.key }})</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Threshold (%)
+      <input type="number" name="threshold" step="0.1" min="0" max="100" value="85" required>
+    </label>
+    <label>
+      Cooldown (seconds)
+      <input type="number" name="cooldown_seconds" min="0" value="300" required>
+    </label>
+    <fieldset>
+      <legend>Channels</legend>
+      {% for value, label, enabled in channels %}
+      <label class="checkbox">
+        <input type="checkbox" name="channels" value="{{ value }}"
+               {% if value == 'email' %}checked{% endif %}
+               {% if not enabled %}disabled{% endif %}>
+        {{ label }}
+      </label>
+      {% endfor %}
+    </fieldset>
+    <label class="checkbox">
+      <input type="checkbox" name="enabled" checked>
+      Enabled
+    </label>
+    <button type="submit">Create rule</button>
+  </form>
+</section>
+{% endblock %}

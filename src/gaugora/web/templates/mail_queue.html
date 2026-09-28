@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Mail queue — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="page-header">
+  <h1>Mail queue</h1>
+  <p class="muted">Enqueue → send immediately → retry loop. Click a row to filter attempts.</p>
+</section>
+
+<section class="panel">
+  <h2>Queue</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Subject</th>
+        <th>Status</th>
+        <th>Attempts</th>
+        <th>Next retry</th>
+        <th>Created</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+      <tr class="{% if selected_id == item.id %}selected{% endif %}">
+        <td><a href="{{ url_for('mail.mail_queue', id=item.id) }}">#{{ item.id }}</a></td>
+        <td>{{ item.subject }}</td>
+        <td><span class="status status-{{ item.status }}">{{ item.status }}</span></td>
+        <td>{{ item.attempts }}</td>
+        <td>{{ item.next_retry_at or '—' }}</td>
+        <td>{{ item.created_at }}</td>
+        <td>
+          {% if item.status != 'sent' %}
+          <form method="post" action="{{ url_for('mail.retry_item', item_id=item.id) }}">
+            <button type="submit" class="small">Retry</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% if item.last_error and selected_id == item.id %}
+      <tr><td colspan="7" class="error-row">{{ item.last_error }}</td></tr>
+      {% endif %}
+      {% else %}
+      <tr><td colspan="7" class="muted">Queue is empty.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="panel">
+  <h2>
+    {% if selected_id %}Attempts for #{{ selected_id }}{% else %}Recent attempts{% endif %}
+  </h2>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Queue</th>
+        <th>When</th>
+        <th>Result</th>
+        <th>Error</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in attempts %}
+      <tr>
+        <td>#{{ a.id }}</td>
+        <td><a href="{{ url_for('mail.mail_queue', id=a.queue_id) }}">#{{ a.queue_id }}</a></td>
+        <td>{{ a.attempted_at }}</td>
+        <td>{% if a.success %}ok{% else %}fail{% endif %}</td>
+        <td class="muted">{{ a.error or '' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No attempts yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

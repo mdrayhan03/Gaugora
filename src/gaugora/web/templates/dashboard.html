@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="page-header">
+  <h1>Dashboard</h1>
+  <p class="muted">Sampling every {{ sample_interval }}s on this host.</p>
+</section>
+
+<section class="metric-grid">
+  {% for card in cards %}
+  <article class="metric-card">
+    <h2>{{ card.name }}</h2>
+    <p class="metric-value">
+      {% if card.value is not none %}{{ '%.1f'|format(card.value) }}%{% else %}—{% endif %}
+    </p>
+    <p class="muted small">
+      {% if card.collected_at %}{{ card.collected_at }}{% else %}No samples yet{% endif %}
+    </p>
+  </article>
+  {% else %}
+  <p>No metrics configured.</p>
+  {% endfor %}
+</section>
+
+<section class="panel">
+  <div class="panel-header">
+    <h2>Recent mail queue</h2>
+    <a href="{{ url_for('mail.mail_queue') }}">View all</a>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Subject</th>
+        <th>Status</th>
+        <th>Attempts</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in queue_rows %}
+      <tr>
+        <td><a href="{{ url_for('mail.mail_queue', id=row.id) }}">#{{ row.id }}</a></td>
+        <td>{{ row.subject }}</td>
+        <td><span class="status status-{{ row.status }}">{{ row.status }}</span></td>
+        <td>{{ row.attempts }}</td>
+        <td>{{ row.created_at }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No mail yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

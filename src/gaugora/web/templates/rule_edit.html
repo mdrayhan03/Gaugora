@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Edit rule — {{ app_name }}{% endblock %}
+{% block content %}
+<section class="page-header">
+  <h1>Edit rule</h1>
+  <p><a href="{{ url_for('rules.rules_list') }}">← Back to rules</a></p>
+</section>
+
+<section class="panel">
+  <form method="post" class="form grid-form">
+    <input type="hidden" name="action" value="save">
+    <label>
+      Name
+      <input type="text" name="name" value="{{ rule.name }}" required>
+    </label>
+    <label>
+      Metric
+      <select name="metric_key" required>
+        {% for m in metrics %}
+        <option value="{{ m.key }}" {% if m.key == rule.metric_key %}selected{% endif %}>
+          {{ m.name }} ({{ m.key }})
+        </option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      Threshold (%)
+      <input type="number" name="threshold" step="0.1" min="0" max="100"
+             value="{{ rule.threshold }}" required>
+    </label>
+    <label>
+      Cooldown (seconds)
+      <input type="number" name="cooldown_seconds" min="0"
+             value="{{ rule.cooldown_seconds }}" required>
+    </label>
+    <fieldset>
+      <legend>Channels</legend>
+      {% for value, label, enabled in channels %}
+      <label class="checkbox">
+        <input type="checkbox" name="channels" value="{{ value }}"
+               {% if value in rule.channels %}checked{% endif %}
+               {% if not enabled and value not in rule.channels %}disabled{% endif %}>
+        {{ label }}
+      </label>
+      {% endfor %}
+    </fieldset>
+    <label class="checkbox">
+      <input type="checkbox" name="enabled" {% if rule.enabled %}checked{% endif %}>
+      Enabled
+    </label>
+    <div class="form-actions">
+      <button type="submit">Save</button>
+    </div>
+  </form>
+
+  <form method="post" class="form" onsubmit="return confirm('Delete this rule?');">
+    <input type="hidden" name="action" value="delete">
+    <button type="submit" class="danger">Delete rule</button>
+  </form>
+</section>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Metrics — {{ app_name }}{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+{% endblock %}
+{% block content %}
+<section class="page-header">
+  <h1>Metrics</h1>
+  <p class="muted">Last 24 hours of samples. Retention is configured per metric.</p>
+</section>
+
+<div class="split">
+  <aside class="panel">
+    <h2>Definitions</h2>
+    <ul class="metric-list">
+      {% for d in definitions %}
+      <li>
+        <a href="{{ url_for('metrics.metrics_page', key=d.key) }}"
+           class="{% if selected and selected.key == d.key %}active{% endif %}">
+          {{ d.name }}
+        </a>
+        <span class="muted small">{{ d.retention_days }}d</span>
+      </li>
+      {% else %}
+      <li class="muted">No metrics.</li>
+      {% endfor %}
+    </ul>
+
+    {% if selected %}
+    <form method="post" class="form stack">
+      <input type="hidden" name="metric_id" value="{{ selected.id }}">
+      <label>
+        Retention days for {{ selected.name }}
+        <input type="number" name="retention_days" min="1" value="{{ selected.retention_days }}" required>
+      </label>
+      <button type="submit">Save retention</button>
+    </form>
+    {% endif %}
+  </aside>
+
+  <section class="panel grow">
+    {% if selected %}
+    <h2>{{ selected.name }} <span class="muted">({{ selected.key }})</span></h2>
+    <canvas id="metricChart" height="120"></canvas>
+    <script>
+      const labels = {{ chart_labels | tojson }};
+      const values = {{ chart_values | tojson }};
+      new Chart(document.getElementById('metricChart'), {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            label: '{{ selected.name }} %',
+            data: values,
+            borderColor: '#1f6feb',
+            backgroundColor: 'rgba(31, 111, 235, 0.12)',
+            tension: 0.25,
+            fill: true,
+            pointRadius: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: { min: 0, max: 100, title: { display: true, text: '%' } }
+          }
+        }
+      });
+    </script>
+    {% else %}
+    <p class="muted">Select a metric.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
