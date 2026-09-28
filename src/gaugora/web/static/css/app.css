@@ -64,6 +64,20 @@ a:hover { text-decoration: underline; }
   letter-spacing: -0.02em;
 }
 
+.row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
 .muted { color: var(--muted); }
 .small { font-size: 0.85rem; }
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from flask import Blueprint, current_app, render_template
+from flask import Blueprint, current_app, redirect, render_template, url_for
 
 from gaugora.extensions import session_scope
 from gaugora.repositories.mail import MailRepository
@@ -33,7 +33,6 @@ def index():
             }
             for d in definitions
         ]
-        # Detach simple dicts before session closes
         queue_rows = [
             {
                 "id": q.id,
@@ -51,4 +50,13 @@ def index():
         cards=cards,
         queue_rows=queue_rows,
         sample_interval=settings.sample_interval_seconds,
+        project_name=settings.project_name,
     )
+
+
+@bp.post("/refresh")
+def refresh():
+    """Take a fresh sample, then reload the dashboard."""
+    with session_scope() as session:
+        CollectorService(session).collect_once()
+    return redirect(url_for("dashboard.index"))

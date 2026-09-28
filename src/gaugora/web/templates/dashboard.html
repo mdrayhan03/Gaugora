@@ -1,9 +1,20 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — {{ app_name }}{% endblock %}
 {% block content %}
-<section class="page-header">
-  <h1>Dashboard</h1>
-  <p class="muted">Sampling every {{ sample_interval }}s on this host.</p>
+<section class="page-header row-header">
+  <div>
+    <h1>Dashboard</h1>
+    <p class="muted">Project: <strong>{{ project_name }}</strong> — sampling every {{ sample_interval }}s.</p>
+  </div>
+  <div class="header-actions">
+    <label class="checkbox">
+      <input type="checkbox" id="autoRefresh" checked>
+      Auto-refresh
+    </label>
+    <form method="post" action="{{ url_for('dashboard.refresh') }}">
+      <button type="submit">Refresh now</button>
+    </form>
+  </div>
 </section>
 
 <section class="metric-grid">
@@ -52,4 +63,22 @@
     </tbody>
   </table>
 </section>
+
+<script>
+  (function () {
+    const key = "gaugora.dashboard.autoRefresh";
+    const box = document.getElementById("autoRefresh");
+    const intervalMs = {{ sample_interval|int }} * 1000;
+    const stored = localStorage.getItem(key);
+    box.checked = stored === null ? true : stored === "1";
+    box.addEventListener("change", function () {
+      localStorage.setItem(key, box.checked ? "1" : "0");
+    });
+    setInterval(function () {
+      if (box.checked) {
+        window.location.reload();
+      }
+    }, intervalMs);
+  })();
+</script>
 {% endblock %}
