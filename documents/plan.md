@@ -74,14 +74,14 @@ flowchart LR
 - Full hexagonal adapters for every SQL dialect
 - Alert conditions beyond `metric > N%` (e.g. sustained windows, process checks)
 
-## Roadmap (mail / diagnostics)
+## Roadmap (mail / diagnostics / CPU)
 
-| Version | Mail format | Notes |
-|---------|-------------|--------|
-| **v1 / v2** | **Plain text** | Alert body with who (top processes) + partial why (host context). Keep readable tables in monospace text. |
-| **v3** | **HTML + plain-text fallback** | Multipart email, cleaner process table, **Gaugora logo**, still include plain text for clients that prefer it. |
+| Version | Focus | Notes |
+|---------|--------|--------|
+| **v1 / v2** | Plain-text alerts + who/partial why | Use diagnostic emails to investigate CPU spike *causes*. Keep `cpu_percent` sample as-is for now. |
+| **v3** | HTML mail + smarter CPU | Multipart HTML + **Gaugora logo**; longer CPU sample window and/or **sustained** breach (N samples) so alerts align better with host panels (e.g. Hostinger averages). |
 
-Do **not** add HTML email templates before v3.
+Do **not** add HTML email or change CPU sampling semantics before v3 (unless a critical bug is found).
 
 ## Implementation notes
 

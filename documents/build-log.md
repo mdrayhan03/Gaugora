@@ -38,3 +38,4 @@ Smoke-tested: dashboard/metrics/rules/smtp/mail routes 200; collector readings; 
 ### Note
 - This is **who + system clues**, not true app root cause (logs/APM still needed for that).
 - **Mail format decision:** stay on **plain text through v2**. **HTML multipart + Gaugora logo** is deferred to **v3**.
+- **CPU sampling decision:** keep short `cpu_percent` window for v2; use alert emails to learn *who* causes 100% needles. **Longer sample / sustained alerts** deferred to **v3** (Hostinger-style averages).
