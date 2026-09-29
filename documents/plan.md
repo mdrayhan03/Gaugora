@@ -74,6 +74,15 @@ flowchart LR
 - Full hexagonal adapters for every SQL dialect
 - Alert conditions beyond `metric > N%` (e.g. sustained windows, process checks)
 
+## Roadmap (mail / diagnostics)
+
+| Version | Mail format | Notes |
+|---------|-------------|--------|
+| **v1 / v2** | **Plain text** | Alert body with who (top processes) + partial why (host context). Keep readable tables in monospace text. |
+| **v3** | **HTML + plain-text fallback** | Multipart email, cleaner process table, **Gaugora logo**, still include plain text for clients that prefer it. |
+
+Do **not** add HTML email templates before v3.
+
 ## Implementation notes
 
 - Stack: Python, `psutil`, Flask, Jinja, SQLite, Docker.
