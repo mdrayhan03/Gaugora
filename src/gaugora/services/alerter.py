@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from gaugora.config import Settings
 from gaugora.repositories.alerts import AlertRepository
 from gaugora.repositories.mail import MailRepository
+from gaugora.services.diagnostics import format_diagnostics_for_email
 from gaugora.services.evaluator import Breach
 from gaugora.services.mailer import MailerService
 
@@ -34,6 +35,12 @@ class AlerterService:
                 recipients = list(smtp.to_addresses or [])
                 project = self.settings.project_name
                 subject = f"[Gaugora] {project} — {breach.rule.name}"
+                try:
+                    diagnostics = format_diagnostics_for_email(breach.rule.metric_key)
+                except Exception:  # noqa: BLE001 — never block alerting on diagnostics
+                    diagnostics = (
+                        "\n(Host/process diagnostics unavailable on this sample.)\n"
+                    )
                 body = (
                     f"Project: {project}\n"
                     f"Alert: {breach.rule.name}\n"
@@ -41,6 +48,7 @@ class AlerterService:
                     f"Condition: {breach.rule.metric_key} {breach.rule.operator} "
                     f"{breach.rule.threshold}\n"
                     f"Current value: {breach.value:.2f}\n"
+                    f"{diagnostics}"
                 )
                 item = self.mail.enqueue(
                     channel=channel,

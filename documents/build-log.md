@@ -27,3 +27,14 @@ uv run gaugora
 ```
 
 Smoke-tested: dashboard/metrics/rules/smtp/mail routes 200; collector readings; alert enqueue + failed SMTP attempt recorded as `pending` with retry scheduled.
+
+## 2026-09-29 — Alert who + partial why
+
+### Done
+- Added `services/diagnostics.py`: top processes by CPU/MEM (cmdline, user, pid) + host context (load, memory/swap, CPU breakdown including iowait when available).
+- Alert emails append this block on breach; failures in diagnostics never block sending.
+- `docker-compose.yml` sets `pid: host` so process snapshots see the VM, not only the Gaugora container.
+
+### Note
+- This is **who + system clues**, not true app root cause (logs/APM still needed for that).
+- **Mail format decision:** stay on **plain text through v2**. **HTML multipart + Gaugora logo** is deferred to **v3**.

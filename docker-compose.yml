@@ -11,6 +11,8 @@ services:
       GAUGORA_PORT: "8080"
     volumes:
       - gaugora-data:/data
+    # See host processes for alert "who" diagnostics (not only this container).
+    pid: host
     restart: unless-stopped
     # Enforced by `docker compose up`
     cpus: 0.50

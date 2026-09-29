@@ -28,6 +28,8 @@ docker compose up --build -d
 
 SQLite is stored on the `gaugora-data` volume at `/data/gaugora.db`.
 
+Compose uses `pid: host` so alert emails can list **host** top processes (who is hot), not only processes inside the Gaugora container.
+
 ## First-time setup
 
 1. Set `GAUGORA_PROJECT_NAME` in `.env` (shown in alert emails).
