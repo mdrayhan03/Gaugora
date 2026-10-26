@@ -7,7 +7,7 @@ from pathlib import Path
 
 from alembic import command
 from alembic.config import Config
-from sqlalchemy import inspect
+from sqlalchemy import inspect, text
 
 from gaugora import extensions
 from gaugora.config import Settings, load_settings
@@ -47,8 +47,25 @@ def run_migrations() -> None:
         alembic_cfg.attributes["connection"] = connection
         inspector = inspect(connection)
         tables = inspector.get_table_names()
-        # If legacy database exists without alembic_version, stamp baseline first
-        if "alembic_version" not in tables and "alert_rules" in tables:
+
+        current_rev = None
+        if "alembic_version" in tables:
+            current_rev = connection.execute(
+                text("SELECT version_num FROM alembic_version")
+            ).scalar()
+
+        has_existing_tables = any(
+            t in tables
+            for t in (
+                "metric_definitions",
+                "metric_samples",
+                "alert_rules",
+                "smtp_settings",
+            )
+        )
+
+        # If legacy database has tables but no revision stamped, stamp baseline first
+        if not current_rev and has_existing_tables:
             logger.info("Stamping existing database as 0001_baseline")
             command.stamp(alembic_cfg, "0001_baseline")
 

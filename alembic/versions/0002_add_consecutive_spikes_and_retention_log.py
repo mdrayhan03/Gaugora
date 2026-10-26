@@ -17,37 +17,48 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # 1. Add consecutive spike guard columns to alert_rules
-    op.add_column(
-        "alert_rules",
-        sa.Column("consecutive_breaches", sa.Integer(), nullable=False, server_default="3"),
-    )
-    op.add_column(
-        "alert_rules",
-        sa.Column("current_breach_count", sa.Integer(), nullable=False, server_default="0"),
-    )
-    op.add_column(
-        "alert_rules",
-        sa.Column("is_firing", sa.Boolean(), nullable=False, server_default="0"),
-    )
-    op.add_column(
-        "alert_rules",
-        sa.Column("last_breached_at", sa.DateTime(timezone=True), nullable=True),
-    )
+    bind = op.get_bind()
+    inspector = sa.inspect(bind)
+    tables = inspector.get_table_names()
 
-    # 2. Create retention_logs audit table
-    op.create_table(
-        "retention_logs",
-        sa.Column("id", sa.Integer(), primary_key=True),
-        sa.Column("started_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
-        sa.Column("completed_at", sa.DateTime(timezone=True), nullable=False),
-        sa.Column("duration_ms", sa.Float(), nullable=False, server_default="0.0"),
-        sa.Column("total_deleted", sa.Integer(), nullable=False, server_default="0"),
-        sa.Column("details", sa.JSON(), nullable=False),
-        sa.Column("status", sa.String(length=16), nullable=False, server_default="success"),
-        sa.Column("error", sa.Text(), nullable=True),
-    )
-    op.create_index("ix_retention_logs_started_at", "retention_logs", ["started_at"])
+    # 1. Add consecutive spike guard columns to alert_rules if missing
+    if "alert_rules" in tables:
+        columns = {c["name"] for c in inspector.get_columns("alert_rules")}
+        if "consecutive_breaches" not in columns:
+            op.add_column(
+                "alert_rules",
+                sa.Column("consecutive_breaches", sa.Integer(), nullable=False, server_default="3"),
+            )
+        if "current_breach_count" not in columns:
+            op.add_column(
+                "alert_rules",
+                sa.Column("current_breach_count", sa.Integer(), nullable=False, server_default="0"),
+            )
+        if "is_firing" not in columns:
+            op.add_column(
+                "alert_rules",
+                sa.Column("is_firing", sa.Boolean(), nullable=False, server_default="0"),
+            )
+        if "last_breached_at" not in columns:
+            op.add_column(
+                "alert_rules",
+                sa.Column("last_breached_at", sa.DateTime(timezone=True), nullable=True),
+            )
+
+    # 2. Create retention_logs audit table if missing
+    if "retention_logs" not in tables:
+        op.create_table(
+            "retention_logs",
+            sa.Column("id", sa.Integer(), primary_key=True),
+            sa.Column("started_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+            sa.Column("completed_at", sa.DateTime(timezone=True), nullable=False),
+            sa.Column("duration_ms", sa.Float(), nullable=False, server_default="0.0"),
+            sa.Column("total_deleted", sa.Integer(), nullable=False, server_default="0"),
+            sa.Column("details", sa.JSON(), nullable=False),
+            sa.Column("status", sa.String(length=16), nullable=False, server_default="success"),
+            sa.Column("error", sa.Text(), nullable=True),
+        )
+        op.create_index("ix_retention_logs_started_at", "retention_logs", ["started_at"])
 
 
 def downgrade() -> None:
