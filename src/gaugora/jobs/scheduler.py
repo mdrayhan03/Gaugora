@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 import logging
 
 from flask import Flask
 
 from gaugora.config import Settings
 from gaugora.extensions import scheduler, session_scope
+from gaugora.repositories.retention import RetentionRepository
 from gaugora.services.alerter import AlerterService
 from gaugora.services.collector import CollectorService
 from gaugora.services.evaluator import EvaluatorService
@@ -37,13 +39,35 @@ def _mail_retry_job(settings: Settings) -> None:
 
 
 def _retention_job() -> None:
+    started_at = datetime.now(timezone.utc)
     try:
         with session_scope() as session:
-            deleted = RetentionService(session).prune_all()
-            if deleted:
-                logger.info("Retention pruned %s samples", deleted)
-    except Exception:
+            log = RetentionService(session).prune_all()
+            if log.total_deleted:
+                logger.info(
+                    "Retention pruned %s samples in %.2fms",
+                    log.total_deleted,
+                    log.duration_ms,
+                )
+    except Exception as e:
         logger.exception("Retention job failed")
+        try:
+            with session_scope() as session:
+                completed_at = datetime.now(timezone.utc)
+                duration_ms = max(
+                    0.0, (completed_at - started_at).total_seconds() * 1000.0
+                )
+                RetentionRepository(session).record_run(
+                    started_at=started_at,
+                    completed_at=completed_at,
+                    duration_ms=round(duration_ms, 2),
+                    total_deleted=0,
+                    details={},
+                    status="failed",
+                    error=str(e),
+                )
+        except Exception:
+            logger.exception("Failed to record retention error log")
 
 
 def start_scheduler(app: Flask, settings: Settings) -> None:
