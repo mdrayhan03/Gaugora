@@ -1,99 +1,194 @@
 {% extends "base.html" %}
-{% block title %}Rules — {{ app_name }}{% endblock %}
+{% block title %}Alert Rules — {{ app_name }}{% endblock %}
+
 {% block content %}
-<section class="page-header">
-  <h1>Alert rules</h1>
-  <p class="muted">v1 condition: metric &gt; N%. Channels other than email are selectable for later.</p>
-</section>
+<div class="page-header row-header">
+  <div>
+    <h1>Alert Rules</h1>
+    <p>Automated threshold monitoring with consecutive spike suppression and alert guards.</p>
+  </div>
+</div>
 
-<section class="panel">
-  <h2>Existing rules</h2>
-  <table>
-    <thead>
-      <tr>
-        <th>Name</th>
-        <th>Condition</th>
-        <th>Guard</th>
-        <th>Status</th>
-        <th>Channels</th>
-        <th>Cooldown</th>
-        <th>Enabled</th>
-        <th></th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for rule in rules %}
-      <tr>
-        <td>{{ rule.name }}</td>
-        <td><code>{{ rule.metric_key }} {{ rule.operator }} {{ rule.threshold }}%</code></td>
-        <td>{{ rule.consecutive_breaches }}× spikes</td>
-        <td>
-          {% if not rule.enabled %}
-            <span class="badge muted">Disabled</span>
-          {% elif rule.is_firing %}
-            <span class="badge badge-bad">Firing ({{ rule.current_breach_count }}/{{ rule.consecutive_breaches }})</span>
-          {% elif rule.current_breach_count > 0 %}
-            <span class="badge badge-warn">Spike ({{ rule.current_breach_count }}/{{ rule.consecutive_breaches }})</span>
-          {% else %}
-            <span class="badge badge-ok">Normal</span>
-          {% endif %}
-        </td>
-        <td>{{ rule.channels | join(', ') }}</td>
-        <td>{{ rule.cooldown_seconds }}s</td>
-        <td>{{ 'yes' if rule.enabled else 'no' }}</td>
-        <td><a href="{{ url_for('rules.rule_edit', rule_id=rule.id) }}">Edit</a></td>
-      </tr>
-      {% else %}
-      <tr><td colspan="8" class="muted">No rules yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
-
-<section class="panel">
-  <h2>Create rule</h2>
-  <form method="post" class="form grid-form">
-    <label>
-      Name
-      <input type="text" name="name" required placeholder="High memory">
-    </label>
-    <label>
-      Metric
-      <select name="metric_key" required>
-        {% for m in metrics %}
-        <option value="{{ m.key }}">{{ m.name }} ({{ m.key }})</option>
+<!-- Section: Existing Rules Table -->
+<div class="card">
+  <div class="panel-header">
+    <h2 class="panel-title">Configured Rules</h2>
+    <span class="badge badge-muted">{{ rules | length }} active rules</span>
+  </div>
+  <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Rule Name</th>
+          <th>Condition</th>
+          <th>Sensitivity Guard</th>
+          <th>Status</th>
+          <th>Channels</th>
+          <th>Cooldown</th>
+          <th>State</th>
+          <th style="text-align: right;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rule in rules %}
+        <tr>
+          <td>
+            <strong>{{ rule.name }}</strong>
+          </td>
+          <td>
+            <code>{{ rule.metric_key }} {{ rule.operator }} {{ rule.threshold }}%</code>
+          </td>
+          <td>
+            <span style="font-size: 0.85rem; color: var(--text-body);">{{ rule.consecutive_breaches }}× checks</span>
+          </td>
+          <td>
+            {% if not rule.enabled %}
+              <span class="badge badge-muted">Disabled</span>
+            {% elif rule.is_firing %}
+              <span class="badge badge-bad">
+                <span class="pulse-dot" style="background: var(--bad);"></span>
+                Firing ({{ rule.current_breach_count }}/{{ rule.consecutive_breaches }})
+              </span>
+            {% elif rule.current_breach_count > 0 %}
+              <span class="badge badge-warn">
+                <span class="pulse-dot" style="background: var(--warn);"></span>
+                Spike ({{ rule.current_breach_count }}/{{ rule.consecutive_breaches }})
+              </span>
+            {% else %}
+              <span class="badge badge-ok">
+                <span class="pulse-dot" style="background: var(--ok);"></span>
+                Normal
+              </span>
+            {% endif %}
+          </td>
+          <td>
+            {% for ch in rule.channels %}
+              <span class="badge badge-muted">{{ ch }}</span>
+            {% endfor %}
+          </td>
+          <td>{{ rule.cooldown_seconds }}s</td>
+          <td>
+            {% if rule.enabled %}
+              <span class="badge badge-ok">Enabled</span>
+            {% else %}
+              <span class="badge badge-muted">Paused</span>
+            {% endif %}
+          </td>
+          <td style="text-align: right;">
+            <a href="{{ url_for('rules.rule_edit', rule_id=rule.id) }}" class="btn btn-secondary btn-sm">Edit</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align: center; padding: 2.5rem 1rem; color: var(--text-muted);">
+            No alert rules configured yet. Create your first rule below.
+          </td>
+        </tr>
         {% endfor %}
-      </select>
-    </label>
-    <label>
-      Threshold (%)
-      <input type="number" name="threshold" step="0.1" min="0" max="100" value="85" required>
-    </label>
-    <label>
-      Consecutive Spikes Required
-      <input type="number" name="consecutive_breaches" min="1" max="60" value="3" required>
-      <span class="muted small">Only alert if breached continuously</span>
-    </label>
-    <label>
-      Cooldown (seconds)
-      <input type="number" name="cooldown_seconds" min="0" value="300" required>
-    </label>
-    <fieldset>
-      <legend>Channels</legend>
-      {% for value, label, enabled in channels %}
-      <label class="checkbox">
-        <input type="checkbox" name="channels" value="{{ value }}"
-               {% if value == 'email' %}checked{% endif %}
-               {% if not enabled %}disabled{% endif %}>
-        {{ label }}
-      </label>
-      {% endfor %}
-    </fieldset>
-    <label class="checkbox">
-      <input type="checkbox" name="enabled" checked>
-      Enabled
-    </label>
-    <button type="submit">Create rule</button>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Section: Create New Rule -->
+<div class="card" style="margin-top: 2rem;">
+  <div class="panel-header">
+    <h2 class="panel-title">Create New Rule</h2>
+  </div>
+
+  <form method="post">
+    <!-- Section 1: Definition -->
+    <div class="form-section">
+      <h3 class="form-section-title">Rule Definition</h3>
+      <p class="form-section-desc">Assign a readable name and select the target system metric.</p>
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label class="form-label" for="new_rule_name">Rule Name</label>
+          <input type="text" id="new_rule_name" name="name" required placeholder="e.g. Memory Spike Warning">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="new_rule_metric">Target Metric</label>
+          <select id="new_rule_metric" name="metric_key" required>
+            {% for m in metrics %}
+            <option value="{{ m.key }}">{{ m.name }} ({{ m.key }})</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 2: Detection & Spike Guard -->
+    <div class="form-section">
+      <h3 class="form-section-title">Detection & Spike Guard</h3>
+      <p class="form-section-desc">Configure the trigger threshold and consecutive breach requirement to filter out momentary blips.</p>
+      <div class="form-grid-3">
+        <div class="form-group">
+          <label class="form-label" for="new_rule_threshold">Threshold</label>
+          <div class="input-addon-group">
+            <input type="number" id="new_rule_threshold" name="threshold" step="0.1" min="0" max="100" value="85" required>
+            <span class="input-addon">%</span>
+          </div>
+          <span class="form-hint">Triggers when value exceeds threshold</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="new_rule_breaches">Consecutive Spikes Required</label>
+          <div class="input-addon-group">
+            <input type="number" id="new_rule_breaches" name="consecutive_breaches" min="1" max="60" value="3" required>
+            <span class="input-addon">checks</span>
+          </div>
+          <span class="form-hint">Continuous checks before alert fires</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="new_rule_cooldown">Cooldown Interval</label>
+          <div class="input-addon-group">
+            <input type="number" id="new_rule_cooldown" name="cooldown_seconds" min="0" value="300" required>
+            <span class="input-addon">sec</span>
+          </div>
+          <span class="form-hint">Quiet period before resending alert</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 3: Notification Channels -->
+    <div class="form-section">
+      <h3 class="form-section-title">Notification Channels</h3>
+      <p class="form-section-desc">Select which destinations will receive notifications.</p>
+      <div class="channel-selector">
+        {% for value, label, enabled in channels %}
+        <label class="channel-tile {% if value == 'email' %}active{% endif %} {% if not enabled %}disabled{% endif %}">
+          <div class="channel-tile-info">
+            <input type="checkbox" name="channels" value="{{ value }}"
+                   {% if value == 'email' %}checked{% endif %}
+                   {% if not enabled %}disabled{% endif %}>
+            <span class="channel-tile-name">{{ label }}</span>
+          </div>
+          {% if enabled %}
+            <span class="badge badge-ok">Ready</span>
+          {% else %}
+            <span class="badge badge-muted">Coming Soon</span>
+          {% endif %}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Section 4: Enabled Toggle -->
+    <div class="form-section">
+      <div class="toggle-control">
+        <div class="toggle-info">
+          <h4>Activate rule immediately</h4>
+          <p>Enable automated evaluation as soon as this rule is saved.</p>
+        </div>
+        <input type="checkbox" name="enabled" checked style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
+      </div>
+    </div>
+
+    <!-- Footer Actions -->
+    <div class="form-actions-footer">
+      <button type="submit" class="btn btn-primary">Create Alert Rule</button>
+    </div>
   </form>
-</section>
+</div>
 {% endblock %}

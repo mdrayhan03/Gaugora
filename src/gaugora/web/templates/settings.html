@@ -1,48 +1,77 @@
 {% extends "base.html" %}
-{% block title %}SMTP — {{ app_name }}{% endblock %}
-{% block content %}
-<section class="page-header">
-  <h1>SMTP settings</h1>
-  <p class="muted">Used for email alerts. Recipients are a comma-separated list.</p>
-</section>
+{% block title %}SMTP Settings — {{ app_name }}{% endblock %}
 
-<section class="panel">
-  <p class="muted">
-    Example for Gmail: host <code>smtp.gmail.com</code>, port <code>587</code>, STARTTLS on,
-    username = full Gmail address, password = <strong>App Password</strong> (not your normal login password),
-    from address = same Gmail address.
-  </p>
-  <form method="post" class="form grid-form">
-    <label>
-      Host
-      <input type="text" name="host" value="{{ smtp.host }}" placeholder="smtp.example.com">
-    </label>
-    <label>
-      Port
-      <input type="number" name="port" value="{{ smtp.port }}">
-    </label>
-    <label class="checkbox">
-      <input type="checkbox" name="use_tls" {% if smtp.use_tls %}checked{% endif %}>
-      Use STARTTLS
-    </label>
-    <label>
-      Username
-      <input type="text" name="username" value="{{ smtp.username }}" autocomplete="username">
-    </label>
-    <label>
-      Password {% if smtp.has_password %}<span class="muted small">(leave blank to keep)</span>{% endif %}
-      <input type="password" name="password" value="" autocomplete="new-password">
-    </label>
-    <label>
-      From address
-      <input type="email" name="from_address" value="{{ smtp.from_address }}">
-    </label>
-    <label class="full">
-      To addresses
-      <input type="text" name="to_addresses" value="{{ smtp.to_addresses }}"
-             placeholder="ops@example.com, oncall@example.com">
-    </label>
-    <button type="submit">Save settings</button>
-  </form>
-</section>
+{% block content %}
+<div class="page-header">
+  <h1>SMTP Settings</h1>
+  <p>Configure the outbound mail server used to dispatch alert notifications and incident diagnostics.</p>
+</div>
+
+<form method="post" class="card">
+  <!-- Info banner -->
+  <div style="background: var(--surface-alt); padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); font-size: 0.875rem; color: var(--text-body);">
+    <strong>Quick Setup for Gmail / Google Workspace:</strong> Host: <code>smtp.gmail.com</code> &bull; Port: <code>587</code> &bull; STARTTLS: On &bull; Username: Your full email &bull; Password: Use a generated <strong>Google App Password</strong> (not your standard account password).
+  </div>
+
+  <!-- Server connection -->
+  <div class="form-section">
+    <h3 class="form-section-title">Server Connection</h3>
+    <p class="form-section-desc">SMTP endpoint and port security configuration.</p>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label" for="smtp_host">SMTP Host</label>
+        <input type="text" id="smtp_host" name="host" value="{{ smtp.host }}" placeholder="smtp.gmail.com or mail.example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="smtp_port">Port</label>
+        <input type="number" id="smtp_port" name="port" value="{{ smtp.port }}" placeholder="587">
+      </div>
+    </div>
+    <div style="margin-top: 1rem;">
+      <label style="display: inline-flex; align-items: center; gap: 0.6rem; font-size: 0.9rem; font-weight: 500; cursor: pointer;">
+        <input type="checkbox" name="use_tls" {% if smtp.use_tls %}checked{% endif %} style="width: 18px; height: 18px; accent-color: var(--primary);">
+        Enable STARTTLS encryption (recommended)
+      </label>
+    </div>
+  </div>
+
+  <!-- Authentication -->
+  <div class="form-section">
+    <h3 class="form-section-title">Authentication & Sender</h3>
+    <p class="form-section-desc">Credentials used to authenticate with the mail server.</p>
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label class="form-label" for="smtp_user">Username</label>
+        <input type="text" id="smtp_user" name="username" value="{{ smtp.username }}" autocomplete="username" placeholder="user@example.com">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="smtp_pass">
+          Password
+          {% if smtp.has_password %}<span class="badge badge-ok" style="font-size: 0.7rem;">Configured</span>{% endif %}
+        </label>
+        <input type="password" id="smtp_pass" name="password" value="" autocomplete="new-password" placeholder="{% if smtp.has_password %}•••••••• (leave blank to keep){% else %}Enter SMTP password{% endif %}">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="smtp_from">From Address</label>
+        <input type="email" id="smtp_from" name="from_address" value="{{ smtp.from_address }}" placeholder="alerts@example.com">
+      </div>
+    </div>
+  </div>
+
+  <!-- Recipients -->
+  <div class="form-section">
+    <h3 class="form-section-title">Default Alert Recipients</h3>
+    <p class="form-section-desc">Comma-separated list of email addresses that will receive incident notifications.</p>
+    <div class="form-group">
+      <label class="form-label" for="smtp_to">Recipient Emails</label>
+      <input type="text" id="smtp_to" name="to_addresses" value="{{ smtp.to_addresses }}" placeholder="devops@company.com, oncall@company.com">
+      <span class="form-hint">Separate multiple email addresses with commas.</span>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="form-actions-footer">
+    <button type="submit" class="btn btn-primary">Save SMTP Settings</button>
+  </div>
+</form>
 {% endblock %}

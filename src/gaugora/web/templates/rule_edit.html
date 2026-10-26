@@ -1,67 +1,127 @@
 {% extends "base.html" %}
-{% block title %}Edit rule — {{ app_name }}{% endblock %}
-{% block content %}
-<section class="page-header">
-  <h1>Edit rule</h1>
-  <p><a href="{{ url_for('rules.rules_list') }}">← Back to rules</a></p>
-</section>
+{% block title %}Edit rule: {{ rule.name }} — {{ app_name }}{% endblock %}
 
-<section class="panel">
-  <form method="post" class="form grid-form">
-    <input type="hidden" name="action" value="save">
-    <label>
-      Name
-      <input type="text" name="name" value="{{ rule.name }}" required>
-    </label>
-    <label>
-      Metric
-      <select name="metric_key" required>
-        {% for m in metrics %}
-        <option value="{{ m.key }}" {% if m.key == rule.metric_key %}selected{% endif %}>
-          {{ m.name }} ({{ m.key }})
-        </option>
-        {% endfor %}
-      </select>
-    </label>
-    <label>
-      Threshold (%)
-      <input type="number" name="threshold" step="0.1" min="0" max="100"
-             value="{{ rule.threshold }}" required>
-    </label>
-    <label>
-      Consecutive Spikes Required
-      <input type="number" name="consecutive_breaches" min="1" max="60"
-             value="{{ rule.consecutive_breaches or 3 }}" required>
-      <span class="muted small">Only alert if breached continuously</span>
-    </label>
-    <label>
-      Cooldown (seconds)
-      <input type="number" name="cooldown_seconds" min="0"
-             value="{{ rule.cooldown_seconds }}" required>
-    </label>
-    <fieldset>
-      <legend>Channels</legend>
+{% block content %}
+<div class="page-header">
+  <a href="{{ url_for('rules.rules_list') }}" class="breadcrumb-back">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 12H5M12 19l-7-7 7-7"/>
+    </svg>
+    Back to alert rules
+  </a>
+  <h1>Edit rule: {{ rule.name }}</h1>
+  <p>Configure detection threshold, sensitivity guard, and delivery channels.</p>
+</div>
+
+<form method="post" class="card">
+  <input type="hidden" name="action" value="save">
+
+  <!-- Section 1: Definition -->
+  <div class="form-section">
+    <h3 class="form-section-title">Rule Definition</h3>
+    <p class="form-section-desc">Define the descriptive name and which system metric to monitor.</p>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label" for="rule_name">Rule Name</label>
+        <input type="text" id="rule_name" name="name" value="{{ rule.name }}" required placeholder="e.g. High Memory Alert">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="rule_metric">Target Metric</label>
+        <select id="rule_metric" name="metric_key" required>
+          {% for m in metrics %}
+          <option value="{{ m.key }}" {% if m.key == rule.metric_key %}selected{% endif %}>
+            {{ m.name }} ({{ m.key }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Threshold & Sensitivity -->
+  <div class="form-section">
+    <h3 class="form-section-title">Detection & Spike Guard</h3>
+    <p class="form-section-desc">Specify the trigger threshold and how many consecutive breaches are required before alerting.</p>
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label class="form-label" for="rule_threshold">Threshold</label>
+        <div class="input-addon-group">
+          <input type="number" id="rule_threshold" name="threshold" step="0.1" min="0" max="100" value="{{ rule.threshold }}" required>
+          <span class="input-addon">%</span>
+        </div>
+        <span class="form-hint">Triggers when metric exceeds this value</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="rule_breaches">Consecutive Spikes Required</label>
+        <div class="input-addon-group">
+          <input type="number" id="rule_breaches" name="consecutive_breaches" min="1" max="60" value="{{ rule.consecutive_breaches or 3 }}" required>
+          <span class="input-addon">checks</span>
+        </div>
+        <span class="form-hint">Must stay above threshold this many checks in a row</span>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="rule_cooldown">Cooldown Interval</label>
+        <div class="input-addon-group">
+          <input type="number" id="rule_cooldown" name="cooldown_seconds" min="0" value="{{ rule.cooldown_seconds }}" required>
+          <span class="input-addon">sec</span>
+        </div>
+        <span class="form-hint">Minimum quiet time before re-alerting</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Notification Channels -->
+  <div class="form-section">
+    <h3 class="form-section-title">Notification Channels</h3>
+    <p class="form-section-desc">Select which destinations will receive alerts when this rule fires.</p>
+    <div class="channel-selector">
       {% for value, label, enabled in channels %}
-      <label class="checkbox">
-        <input type="checkbox" name="channels" value="{{ value }}"
-               {% if value in rule.channels %}checked{% endif %}
-               {% if not enabled and value not in rule.channels %}disabled{% endif %}>
-        {{ label }}
+      <label class="channel-tile {% if value in rule.channels %}active{% endif %} {% if not enabled %}disabled{% endif %}">
+        <div class="channel-tile-info">
+          <input type="checkbox" name="channels" value="{{ value }}"
+                 {% if value in rule.channels %}checked{% endif %}
+                 {% if not enabled and value not in rule.channels %}disabled{% endif %}>
+          <span class="channel-tile-name">{{ label }}</span>
+        </div>
+        {% if enabled %}
+          <span class="badge badge-ok">Ready</span>
+        {% else %}
+          <span class="badge badge-muted">Coming Soon</span>
+        {% endif %}
       </label>
       {% endfor %}
-    </fieldset>
-    <label class="checkbox">
-      <input type="checkbox" name="enabled" {% if rule.enabled %}checked{% endif %}>
-      Enabled
-    </label>
-    <div class="form-actions">
-      <button type="submit">Save</button>
     </div>
-  </form>
+  </div>
 
-  <form method="post" class="form" onsubmit="return confirm('Delete this rule?');">
+  <!-- Section 4: Status -->
+  <div class="form-section">
+    <div class="toggle-control">
+      <div class="toggle-info">
+        <h4>Enable this alert rule</h4>
+        <p>When enabled, Gaugora actively evaluates samples against this rule every tick.</p>
+      </div>
+      <input type="checkbox" name="enabled" {% if rule.enabled %}checked{% endif %} style="width: 20px; height: 20px; accent-color: var(--primary); cursor: pointer;">
+    </div>
+  </div>
+
+  <!-- Footer Actions -->
+  <div class="form-actions-footer">
+    <a href="{{ url_for('rules.rules_list') }}" class="btn btn-secondary">Cancel</a>
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+  </div>
+</form>
+
+<!-- Danger Zone: Segregated at bottom -->
+<div class="danger-zone">
+  <div class="danger-zone-text">
+    <h4>Delete Rule</h4>
+    <p>Permanently remove this alert rule. Active firing state and cooldowns will be discarded.</p>
+  </div>
+  <form method="post" onsubmit="return confirm('Are you sure you want to permanently delete this rule?');">
     <input type="hidden" name="action" value="delete">
-    <button type="submit" class="danger">Delete rule</button>
+    <button type="submit" class="btn btn-danger-outline">Delete this rule</button>
   </form>
-</section>
+</div>
 {% endblock %}

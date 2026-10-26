@@ -1,98 +1,169 @@
 {% extends "base.html" %}
-{% block title %}Metrics — {{ app_name }}{% endblock %}
+{% block title %}Metrics History — {{ app_name }}{% endblock %}
 {% block head %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 {% endblock %}
-{% block content %}
-<section class="page-header">
-  <h1>Metrics</h1>
-  <p class="muted">Last 24 hours of samples. Retention is configured per metric.</p>
-</section>
 
+{% block content %}
+<div class="page-header">
+  <h1>Metrics History</h1>
+  <p>Live trend lines and per-metric retention rules (last 24 hours).</p>
+</div>
+
+<!-- Auto-retention Status Banner -->
 {% if retention_info %}
   {% if retention_info.status == 'success' %}
   <div class="banner banner-ok">
-    <span>
-      <strong>Auto-retention active</strong> &mdash; Last pruned {{ retention_info.completed_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
-      ({{ retention_info.total_deleted }} samples cleaned in {{ retention_info.duration_ms }}ms)
-    </span>
+    <div style="display: flex; align-items: center; gap: 0.65rem;">
+      <span style="font-size: 1.15rem;">✓</span>
+      <div>
+        <strong>Auto-retention active</strong> &mdash; Last pruned {{ retention_info.completed_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+        <span style="color: #047857; margin-left: 0.35rem;">({{ retention_info.total_deleted }} samples cleaned in {{ retention_info.duration_ms }}ms)</span>
+      </div>
+    </div>
     <span class="badge badge-ok">Healthy</span>
   </div>
   {% else %}
   <div class="banner banner-bad">
-    <span>
-      <strong>Auto-retention warning</strong> &mdash; Last run failed: {{ retention_info.error }}
-    </span>
+    <div style="display: flex; align-items: center; gap: 0.65rem;">
+      <span style="font-size: 1.15rem;">⚠</span>
+      <div>
+        <strong>Auto-retention warning</strong> &mdash; Last run failed: {{ retention_info.error }}
+      </div>
+    </div>
     <span class="badge badge-bad">Failed</span>
   </div>
   {% endif %}
 {% else %}
   <div class="banner banner-warn">
-    <span><strong>Auto-retention active</strong> &mdash; Scheduled to run hourly.</span>
+    <div style="display: flex; align-items: center; gap: 0.65rem;">
+      <span style="font-size: 1.15rem;">ℹ</span>
+      <div>
+        <strong>Auto-retention active</strong> &mdash; Scheduled to prune samples hourly.
+      </div>
+    </div>
     <span class="badge badge-warn">Scheduled</span>
   </div>
 {% endif %}
 
 <div class="split">
-  <aside class="panel">
-    <h2>Definitions</h2>
-    <ul class="metric-list">
-      {% for d in definitions %}
-      <li>
+  <!-- Left Column: Metrics List & Retention Setting -->
+  <aside>
+    <div class="card">
+      <div class="panel-header">
+        <h2 class="panel-title">Metrics</h2>
+      </div>
+      <div style="padding: 0.5rem 0;">
+        {% for d in definitions %}
         <a href="{{ url_for('metrics.metrics_page', key=d.key) }}"
-           class="{% if selected and selected.key == d.key %}active{% endif %}">
-          {{ d.name }}
+           style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1.25rem; font-size: 0.9rem; border-left: 3px solid {% if selected and selected.key == d.key %}var(--primary){% else %}transparent{% endif %}; background: {% if selected and selected.key == d.key %}var(--primary-light){% else %}transparent{% endif %}; color: {% if selected and selected.key == d.key %}var(--primary){% else %}var(--text-body){% endif %}; font-weight: {% if selected and selected.key == d.key %}600{% else %}500{% endif %}; transition: all 0.15s ease;">
+          <span>{{ d.name }}</span>
+          <span class="badge badge-muted">{{ d.retention_days }}d retention</span>
         </a>
-        <span class="muted small">{{ d.retention_days }}d</span>
-      </li>
-      {% else %}
-      <li class="muted">No metrics.</li>
-      {% endfor %}
-    </ul>
+        {% else %}
+        <p style="padding: 1rem 1.25rem; color: var(--text-muted); margin: 0;">No metrics available.</p>
+        {% endfor %}
+      </div>
+    </div>
 
     {% if selected %}
-    <form method="post" class="form stack">
-      <input type="hidden" name="metric_id" value="{{ selected.id }}">
-      <label>
-        Retention days for {{ selected.name }}
-        <input type="number" name="retention_days" min="1" value="{{ selected.retention_days }}" required>
-      </label>
-      <button type="submit">Save retention</button>
-    </form>
+    <div class="card" style="margin-top: 1rem;">
+      <div class="panel-header">
+        <h2 class="panel-title">Retention Period</h2>
+      </div>
+      <form method="post" style="padding: 1.25rem;">
+        <input type="hidden" name="metric_id" value="{{ selected.id }}">
+        <div class="form-group">
+          <label class="form-label" for="ret_days">Keep data for (days)</label>
+          <div class="input-addon-group">
+            <input type="number" id="ret_days" name="retention_days" min="1" max="365" value="{{ selected.retention_days }}" required>
+            <span class="input-addon">days</span>
+          </div>
+          <span class="form-hint">Samples older than this are purged hourly</span>
+        </div>
+        <button type="submit" class="btn btn-secondary btn-sm" style="margin-top: 1rem; width: 100%;">
+          Update Retention
+        </button>
+      </form>
+    </div>
     {% endif %}
   </aside>
 
-  <section class="panel grow">
+  <!-- Right Column: Interactive Line Chart -->
+  <section class="card" style="padding: 1.5rem;">
     {% if selected %}
-    <h2>{{ selected.name }} <span class="muted">({{ selected.key }})</span></h2>
-    <canvas id="metricChart" height="120"></canvas>
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1.25rem;">
+      <h2 style="margin: 0; font-size: 1.2rem; font-weight: 700; color: var(--text-main);">
+        {{ selected.name }}
+        <code style="font-size: 0.8rem; margin-left: 0.4rem; font-weight: normal;">{{ selected.key }}</code>
+      </h2>
+      <span style="font-size: 0.85rem; color: var(--text-muted);">Last 24 Hours</span>
+    </div>
+
+    <div style="position: relative; width: 100%; min-height: 320px;">
+      <canvas id="metricChart"></canvas>
+    </div>
+
     <script>
       const labels = {{ chart_labels | tojson }};
       const values = {{ chart_values | tojson }};
-      new Chart(document.getElementById('metricChart'), {
+      const ctx = document.getElementById('metricChart').getContext('2d');
+
+      const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+      gradient.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
+      gradient.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
+
+      new Chart(ctx, {
         type: 'line',
         data: {
           labels,
           datasets: [{
-            label: '{{ selected.name }} %',
+            label: '{{ selected.name }} (%)',
             data: values,
-            borderColor: '#1f6feb',
-            backgroundColor: 'rgba(31, 111, 235, 0.12)',
-            tension: 0.25,
+            borderColor: '#2563eb',
+            borderWidth: 2,
+            backgroundColor: gradient,
+            tension: 0.3,
             fill: true,
-            pointRadius: 0,
+            pointRadius: values.length > 50 ? 0 : 3,
+            pointHoverRadius: 5,
+            pointBackgroundColor: '#2563eb',
           }]
         },
         options: {
           responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0f172a',
+              padding: 10,
+              cornerRadius: 8,
+              titleFont: { size: 12, family: 'Inter' },
+              bodyFont: { size: 13, weight: 'bold', family: 'JetBrains Mono' },
+            }
+          },
           scales: {
-            y: { min: 0, max: 100, title: { display: true, text: '%' } }
+            x: {
+              grid: { display: false },
+              ticks: { maxTicksLimit: 12, color: '#94a3b8', font: { size: 11, family: 'Inter' } }
+            },
+            y: {
+              min: 0,
+              max: 100,
+              grid: { color: '#f1f5f9' },
+              ticks: {
+                callback: function(value) { return value + '%'; },
+                color: '#94a3b8',
+                font: { size: 11, family: 'Inter' }
+              }
+            }
           }
         }
       });
     </script>
     {% else %}
-    <p class="muted">Select a metric.</p>
+    <p style="color: var(--text-muted); text-align: center; padding: 4rem 1rem;">Select a metric from the sidebar to view history chart.</p>
     {% endif %}
   </section>
 </div>

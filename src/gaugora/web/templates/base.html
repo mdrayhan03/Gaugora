@@ -4,29 +4,63 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
   {% block head %}{% endblock %}
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="{{ url_for('dashboard.index') }}">{{ app_name }}</a>
-    <nav>
-      <a href="{{ url_for('dashboard.index') }}">Dashboard</a>
-      <a href="{{ url_for('metrics.metrics_page') }}">Metrics</a>
-      <a href="{{ url_for('rules.rules_list') }}">Rules</a>
-      <a href="{{ url_for('mail.mail_queue') }}">Mail</a>
-      <a href="{{ url_for('settings.smtp_settings') }}">SMTP</a>
-    </nav>
+    <div class="topbar-inner">
+      <div class="brand-group">
+        <a class="brand" href="{{ url_for('dashboard.index') }}">
+          <span class="brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+          </span>
+          <span class="brand-text">{{ app_name }}</span>
+        </a>
+        <span class="live-pill">
+          <span class="pulse-dot"></span>
+          Live
+        </span>
+      </div>
+
+      <nav class="nav-links">
+        <a href="{{ url_for('dashboard.index') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('dashboard.') %}active{% endif %}">
+          Dashboard
+        </a>
+        <a href="{{ url_for('metrics.metrics_page') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('metrics.') %}active{% endif %}">
+          Metrics
+        </a>
+        <a href="{{ url_for('rules.rules_list') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('rules.') %}active{% endif %}">
+          Rules
+        </a>
+        <a href="{{ url_for('mail.mail_queue') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('mail.') %}active{% endif %}">
+          Mail Queue
+        </a>
+        <a href="{{ url_for('settings.smtp_settings') }}" class="nav-link {% if request.endpoint and request.endpoint.startswith('settings.') %}active{% endif %}">
+          SMTP
+        </a>
+      </nav>
+    </div>
   </header>
 
   <main class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
-        <ul class="flashes">
+        <div class="flashes">
           {% for category, message in messages %}
-            <li class="flash flash-{{ category }}">{{ message }}</li>
+            <div class="flash flash-{{ category }}">
+              <span class="flash-icon">
+                {% if category == 'success' %}✓{% else %}⚠{% endif %}
+              </span>
+              <span>{{ message }}</span>
+            </div>
           {% endfor %}
-        </ul>
+        </div>
       {% endif %}
     {% endwith %}
     {% block content %}{% endblock %}

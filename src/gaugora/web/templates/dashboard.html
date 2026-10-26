@@ -1,31 +1,60 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — {{ app_name }}{% endblock %}
+
 {% block content %}
-<section class="page-header row-header">
+<div class="page-header row-header">
   <div>
     <h1>Dashboard</h1>
-    <p class="muted">Project: <strong>{{ project_name }}</strong> — sampling every {{ sample_interval }}s.</p>
+    <p>Host monitoring overview for <strong>{{ project_name }}</strong> &bull; Sampling every {{ sample_interval }}s.</p>
   </div>
   <div class="header-actions">
-    <label class="checkbox">
-      <input type="checkbox" id="autoRefresh" checked>
+    <label style="display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 500; cursor: pointer; background: var(--surface); padding: 0.45rem 0.85rem; border-radius: var(--radius-sm); border: 1px solid var(--border); box-shadow: var(--shadow-sm);">
+      <input type="checkbox" id="autoRefresh" checked style="accent-color: var(--primary);">
       Auto-refresh
     </label>
-    <form method="post" action="{{ url_for('dashboard.refresh') }}">
-      <button type="submit">Refresh now</button>
+    <form method="post" action="{{ url_for('dashboard.refresh') }}" style="margin: 0;">
+      <button type="submit" class="btn btn-secondary btn-sm">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+        </svg>
+        Sample Now
+      </button>
     </form>
   </div>
-</section>
+</div>
 
+<!-- Metric Stat Cards -->
 <section class="metric-grid">
   {% for card in cards %}
   <article class="metric-card">
-    <h2>{{ card.name }}</h2>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h2>{{ card.name }}</h2>
+      {% if card.value is not none %}
+        {% if card.value >= 85 %}
+          <span class="badge badge-bad">High</span>
+        {% elif card.value >= 70 %}
+          <span class="badge badge-warn">Elevated</span>
+        {% else %}
+          <span class="badge badge-ok">Normal</span>
+        {% endif %}
+      {% endif %}
+    </div>
+
     <p class="metric-value">
-      {% if card.value is not none %}{{ '%.1f'|format(card.value) }}%{% else %}—{% endif %}
+      {% if card.value is not none %}
+        {{ '%.1f'|format(card.value) }}<span style="font-size: 1.25rem; font-weight: 500; color: var(--text-muted);">%</span>
+      {% else %}
+        —
+      {% endif %}
     </p>
-    <p class="muted small">
-      {% if card.collected_at %}{{ card.collected_at }}{% else %}No samples yet{% endif %}
+
+    <!-- Visual Progress Bar -->
+    <div style="width: 100%; height: 6px; background: var(--surface-alt); border-radius: 999px; overflow: hidden; margin-bottom: 0.75rem;">
+      <div style="width: {{ [card.value or 0, 100] | min }}%; height: 100%; background: {% if (card.value or 0) >= 85 %}var(--bad){% elif (card.value or 0) >= 70 %}var(--warn){% else %}var(--ok){% endif %}; border-radius: 999px; transition: width 0.3s ease;"></div>
+    </div>
+
+    <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">
+      {% if card.collected_at %}Updated {{ card.collected_at }}{% else %}No samples recorded{% endif %}
     </p>
   </article>
   {% else %}
@@ -33,36 +62,51 @@
   {% endfor %}
 </section>
 
-<section class="panel">
+<!-- Recent Mail Queue -->
+<div class="card">
   <div class="panel-header">
-    <h2>Recent mail queue</h2>
-    <a href="{{ url_for('mail.mail_queue') }}">View all</a>
+    <h2 class="panel-title">Recent Alert Dispatches</h2>
+    <a href="{{ url_for('mail.mail_queue') }}" class="btn btn-secondary btn-sm">View full queue &rarr;</a>
   </div>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>Subject</th>
-        <th>Status</th>
-        <th>Attempts</th>
-        <th>Created</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for row in queue_rows %}
-      <tr>
-        <td><a href="{{ url_for('mail.mail_queue', id=row.id) }}">#{{ row.id }}</a></td>
-        <td>{{ row.subject }}</td>
-        <td><span class="status status-{{ row.status }}">{{ row.status }}</span></td>
-        <td>{{ row.attempts }}</td>
-        <td>{{ row.created_at }}</td>
-      </tr>
-      {% else %}
-      <tr><td colspan="5" class="muted">No mail yet.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</section>
+  <div style="overflow-x: auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Subject</th>
+          <th>Status</th>
+          <th>Attempts</th>
+          <th>Dispatched</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in queue_rows %}
+        <tr>
+          <td><a href="{{ url_for('mail.mail_queue', id=row.id) }}" style="font-weight: 600;">#{{ row.id }}</a></td>
+          <td>{{ row.subject }}</td>
+          <td>
+            {% if row.status == 'sent' %}
+              <span class="badge badge-ok">Sent</span>
+            {% elif row.status == 'failed' %}
+              <span class="badge badge-bad">Failed</span>
+            {% else %}
+              <span class="badge badge-warn">{{ row.status | capitalize }}</span>
+            {% endif %}
+          </td>
+          <td>{{ row.attempts }}</td>
+          <td style="color: var(--text-muted); font-size: 0.85rem;">{{ row.created_at }}</td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="5" style="text-align: center; padding: 2rem 1rem; color: var(--text-muted);">
+            No alert emails in queue. Everything is running smoothly.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
 
 <script>
   (function () {
