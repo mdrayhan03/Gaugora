@@ -27,7 +27,20 @@ def run_migrations() -> None:
     alembic_ini_path = project_root / "alembic.ini"
     alembic_dir = project_root / "alembic"
 
-    alembic_cfg = Config(str(alembic_ini_path))
+    if not alembic_dir.exists():
+        cwd_alembic = Path.cwd() / "alembic"
+        if cwd_alembic.exists():
+            alembic_dir = cwd_alembic
+            alembic_ini_path = Path.cwd() / "alembic.ini"
+        else:
+            logger.error(
+                "Alembic directory not found at %s or %s. Skipping auto-migrations.",
+                alembic_dir,
+                cwd_alembic,
+            )
+            return
+
+    alembic_cfg = Config(str(alembic_ini_path) if alembic_ini_path.exists() else "")
     alembic_cfg.set_main_option("script_location", str(alembic_dir))
 
     with extensions.engine.begin() as connection:

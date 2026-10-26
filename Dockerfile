@@ -11,7 +11,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml README.md alembic.ini ./
+COPY alembic ./alembic
 COPY src ./src
 COPY uv.lock ./
 
