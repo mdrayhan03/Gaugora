@@ -37,6 +37,7 @@ class AlertRepository:
         threshold: float,
         channels: list[str],
         cooldown_seconds: int = 300,
+        consecutive_breaches: int = 3,
         enabled: bool = True,
         operator: str = ">",
     ) -> AlertRule:
@@ -47,6 +48,9 @@ class AlertRepository:
             threshold=threshold,
             channels=channels,
             cooldown_seconds=cooldown_seconds,
+            consecutive_breaches=max(1, consecutive_breaches),
+            current_breach_count=0,
+            is_firing=False,
             enabled=enabled,
         )
         self.session.add(rule)
@@ -62,6 +66,7 @@ class AlertRepository:
         threshold: float,
         channels: list[str],
         cooldown_seconds: int,
+        consecutive_breaches: int,
         enabled: bool,
     ) -> AlertRule:
         rule.name = name
@@ -69,6 +74,7 @@ class AlertRepository:
         rule.threshold = threshold
         rule.channels = channels
         rule.cooldown_seconds = cooldown_seconds
+        rule.consecutive_breaches = max(1, consecutive_breaches)
         rule.enabled = enabled
         self.session.flush()
         return rule

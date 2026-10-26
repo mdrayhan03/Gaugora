@@ -30,6 +30,12 @@ class AlertRule(Base):
     threshold: Mapped[float] = mapped_column(Float, nullable=False)
     channels: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     cooldown_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
+    consecutive_breaches: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    current_breach_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    is_firing: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    last_breached_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
