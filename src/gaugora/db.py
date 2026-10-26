@@ -11,6 +11,7 @@ from gaugora.models import (  # noqa: F401 — register models on Base.metadata
     MailQueueItem,
     MetricDefinition,
     MetricSample,
+    RetentionLog,
     SmtpSettings,
 )
 from gaugora.repositories.mail import MailRepository
