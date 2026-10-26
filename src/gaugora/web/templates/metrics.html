@@ -9,6 +9,30 @@
   <p class="muted">Last 24 hours of samples. Retention is configured per metric.</p>
 </section>
 
+{% if retention_info %}
+  {% if retention_info.status == 'success' %}
+  <div class="banner banner-ok">
+    <span>
+      <strong>Auto-retention active</strong> &mdash; Last pruned {{ retention_info.completed_at.strftime('%Y-%m-%d %H:%M:%S UTC') }}
+      ({{ retention_info.total_deleted }} samples cleaned in {{ retention_info.duration_ms }}ms)
+    </span>
+    <span class="badge badge-ok">Healthy</span>
+  </div>
+  {% else %}
+  <div class="banner banner-bad">
+    <span>
+      <strong>Auto-retention warning</strong> &mdash; Last run failed: {{ retention_info.error }}
+    </span>
+    <span class="badge badge-bad">Failed</span>
+  </div>
+  {% endif %}
+{% else %}
+  <div class="banner banner-warn">
+    <span><strong>Auto-retention active</strong> &mdash; Scheduled to run hourly.</span>
+    <span class="badge badge-warn">Scheduled</span>
+  </div>
+{% endif %}
+
 <div class="split">
   <aside class="panel">
     <h2>Definitions</h2>

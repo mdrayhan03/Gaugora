@@ -8,6 +8,7 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 
 from gaugora.extensions import session_scope
 from gaugora.repositories.metrics import MetricRepository
+from gaugora.repositories.retention import RetentionRepository
 
 bp = Blueprint("metrics", __name__, url_prefix="/metrics")
 
@@ -28,6 +29,22 @@ def metrics_page():
     selected_key = request.args.get("key")
     with session_scope() as session:
         repo = MetricRepository(session)
+        retention_repo = RetentionRepository(session)
+        latest_log = retention_repo.latest_log()
+        retention_info = (
+            {
+                "id": latest_log.id,
+                "started_at": latest_log.started_at,
+                "completed_at": latest_log.completed_at,
+                "duration_ms": latest_log.duration_ms,
+                "total_deleted": latest_log.total_deleted,
+                "details": latest_log.details,
+                "status": latest_log.status,
+                "error": latest_log.error,
+            }
+            if latest_log
+            else None
+        )
         definitions = repo.list_definitions()
         if not definitions:
             return render_template(
@@ -36,6 +53,7 @@ def metrics_page():
                 selected=None,
                 chart_labels=[],
                 chart_values=[],
+                retention_info=retention_info,
             )
         if selected_key is None:
             selected_key = definitions[0].key
@@ -73,4 +91,5 @@ def metrics_page():
         selected=selected_row,
         chart_labels=chart_labels,
         chart_values=chart_values,
+        retention_info=retention_info,
     )
