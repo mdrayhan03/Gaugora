@@ -19,6 +19,7 @@ class Breach:
 
 class EvaluatorService:
     def __init__(self, session: Session) -> None:
+        self.session = session
         self.alerts = AlertRepository(session)
         self.metrics = MetricRepository(session)
 
@@ -29,6 +30,23 @@ class EvaluatorService:
             sample = latest.get(rule.metric_key)
             if sample is None:
                 continue
+
+            is_spike = False
             if rule.operator == ">" and sample.value > rule.threshold:
-                breaches.append(Breach(rule=rule, value=sample.value))
+                is_spike = True
+            elif rule.operator == "<" and sample.value < rule.threshold:
+                is_spike = True
+
+            if is_spike:
+                rule.current_breach_count += 1
+                rule.last_breached_at = sample.collected_at
+                required = max(1, rule.consecutive_breaches)
+                if rule.current_breach_count >= required:
+                    rule.is_firing = True
+                    breaches.append(Breach(rule=rule, value=sample.value))
+            else:
+                rule.current_breach_count = 0
+                rule.is_firing = False
+
+        self.session.flush()
         return breaches
