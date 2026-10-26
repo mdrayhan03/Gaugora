@@ -22,7 +22,7 @@ def create_app(settings: Settings | None = None, *, start_jobs: bool = True) -> 
     app.config["GAUGORA_SETTINGS"] = settings
 
     init_db(settings.database_url)
-    init_database()
+    init_database(settings)
     register_blueprints(app)
 
     if start_jobs:

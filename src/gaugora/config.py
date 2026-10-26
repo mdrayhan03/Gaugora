@@ -21,6 +21,7 @@ class Settings:
     mail_max_attempts: int
     host: str
     port: int
+    auto_migrate: bool = True
 
 
 def _ensure_sqlite_parent(database_url: str) -> None:
@@ -48,4 +49,6 @@ def load_settings() -> Settings:
         mail_max_attempts=int(os.getenv("GAUGORA_MAIL_MAX_ATTEMPTS", "5")),
         host=os.getenv("GAUGORA_HOST", "0.0.0.0"),
         port=int(os.getenv("GAUGORA_PORT", "8080")),
+        auto_migrate=os.getenv("GAUGORA_AUTO_MIGRATE", "true").strip().lower()
+        in ("true", "1", "yes"),
     )
