@@ -13,6 +13,8 @@
       <tr>
         <th>Name</th>
         <th>Condition</th>
+        <th>Guard</th>
+        <th>Status</th>
         <th>Channels</th>
         <th>Cooldown</th>
         <th>Enabled</th>
@@ -23,14 +25,26 @@
       {% for rule in rules %}
       <tr>
         <td>{{ rule.name }}</td>
-        <td><code>{{ rule.metric_key }} {{ rule.operator }} {{ rule.threshold }}</code></td>
+        <td><code>{{ rule.metric_key }} {{ rule.operator }} {{ rule.threshold }}%</code></td>
+        <td>{{ rule.consecutive_breaches }}× spikes</td>
+        <td>
+          {% if not rule.enabled %}
+            <span class="badge muted">Disabled</span>
+          {% elif rule.is_firing %}
+            <span class="badge badge-bad">Firing ({{ rule.current_breach_count }}/{{ rule.consecutive_breaches }})</span>
+          {% elif rule.current_breach_count > 0 %}
+            <span class="badge badge-warn">Spike ({{ rule.current_breach_count }}/{{ rule.consecutive_breaches }})</span>
+          {% else %}
+            <span class="badge badge-ok">Normal</span>
+          {% endif %}
+        </td>
         <td>{{ rule.channels | join(', ') }}</td>
         <td>{{ rule.cooldown_seconds }}s</td>
         <td>{{ 'yes' if rule.enabled else 'no' }}</td>
         <td><a href="{{ url_for('rules.rule_edit', rule_id=rule.id) }}">Edit</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="6" class="muted">No rules yet.</td></tr>
+      <tr><td colspan="8" class="muted">No rules yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>
@@ -54,6 +68,11 @@
     <label>
       Threshold (%)
       <input type="number" name="threshold" step="0.1" min="0" max="100" value="85" required>
+    </label>
+    <label>
+      Consecutive Spikes Required
+      <input type="number" name="consecutive_breaches" min="1" max="60" value="3" required>
+      <span class="muted small">Only alert if breached continuously</span>
     </label>
     <label>
       Cooldown (seconds)

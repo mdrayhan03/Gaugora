@@ -235,7 +235,47 @@ button.danger { background: var(--bad); margin-top: 1rem; }
 .flash-success { background: #dafbe1; color: var(--ok); }
 .flash-error { background: #ffebe9; color: var(--bad); }
 
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  line-height: 1.2;
+}
+.badge-ok { background: #dafbe1; color: var(--ok); }
+.badge-warn { background: #fff8c5; color: var(--warn); }
+.badge-bad { background: #ffebe9; color: var(--bad); }
+
+.banner {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
+  margin-bottom: 1.25rem;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid transparent;
+}
+.banner-ok {
+  background: #dafbe1;
+  border-color: #aceebb;
+  color: #116329;
+}
+.banner-warn {
+  background: #fff8c5;
+  border-color: #fae17d;
+  color: #7d4e00;
+}
+.banner-bad {
+  background: #ffebe9;
+  border-color: #ffc1c0;
+  color: #82071e;
+}
+
 @media (max-width: 800px) {
   .split { grid-template-columns: 1fr; }
   .topbar { flex-direction: column; align-items: flex-start; }
 }
+

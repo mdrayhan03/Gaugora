@@ -30,6 +30,7 @@ def rules_list():
         metric_key = request.form.get("metric_key", "").strip()
         threshold = float(request.form.get("threshold", "0"))
         cooldown_seconds = int(request.form.get("cooldown_seconds", "300"))
+        consecutive_breaches = max(1, int(request.form.get("consecutive_breaches", "3")))
         channels = _parse_channels(request.form)
         enabled = request.form.get("enabled") == "on"
         if not name or not metric_key:
@@ -44,6 +45,7 @@ def rules_list():
                     threshold=threshold,
                     channels=channels,
                     cooldown_seconds=cooldown_seconds,
+                    consecutive_breaches=consecutive_breaches,
                     enabled=enabled,
                 )
             flash("Rule created.", "success")
@@ -61,6 +63,9 @@ def rules_list():
                 "threshold": r.threshold,
                 "channels": r.channels,
                 "cooldown_seconds": r.cooldown_seconds,
+                "consecutive_breaches": r.consecutive_breaches,
+                "current_breach_count": r.current_breach_count,
+                "is_firing": r.is_firing,
                 "enabled": r.enabled,
             }
             for r in rules
@@ -93,6 +98,7 @@ def rule_edit(rule_id: int):
             metric_key = request.form.get("metric_key", "").strip()
             threshold = float(request.form.get("threshold", "0"))
             cooldown_seconds = int(request.form.get("cooldown_seconds", "300"))
+            consecutive_breaches = max(1, int(request.form.get("consecutive_breaches", "3")))
             channels = _parse_channels(request.form)
             enabled = request.form.get("enabled") == "on"
             if not name or not metric_key or not channels:
@@ -105,6 +111,7 @@ def rule_edit(rule_id: int):
                     threshold=threshold,
                     channels=channels,
                     cooldown_seconds=cooldown_seconds,
+                    consecutive_breaches=consecutive_breaches,
                     enabled=enabled,
                 )
                 flash("Rule updated.", "success")
@@ -124,6 +131,7 @@ def rule_edit(rule_id: int):
             "threshold": rule.threshold,
             "channels": list(rule.channels or []),
             "cooldown_seconds": rule.cooldown_seconds,
+            "consecutive_breaches": rule.consecutive_breaches,
             "enabled": rule.enabled,
         }
         metric_rows = [{"key": m.key, "name": m.name} for m in metrics]

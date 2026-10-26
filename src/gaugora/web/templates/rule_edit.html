@@ -29,6 +29,12 @@
              value="{{ rule.threshold }}" required>
     </label>
     <label>
+      Consecutive Spikes Required
+      <input type="number" name="consecutive_breaches" min="1" max="60"
+             value="{{ rule.consecutive_breaches or 3 }}" required>
+      <span class="muted small">Only alert if breached continuously</span>
+    </label>
+    <label>
       Cooldown (seconds)
       <input type="number" name="cooldown_seconds" min="0"
              value="{{ rule.cooldown_seconds }}" required>
